@@ -1,2 +1,5 @@
-# garden-photos
-A personal photo management tool
+# Garden Photos
+
+> Il faut cultiver notre jardin
+>
+> -- <cite>Voltaire</cite>
