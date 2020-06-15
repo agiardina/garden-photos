@@ -19,7 +19,9 @@ private:
   std::unordered_map<std::string, int> cache_y;
   std::unordered_map<std::string, int> cache_w;
   std::unordered_map<std::string, int> cache_h;  
-  std::unordered_map<std::string, int> cache_res;  
+  std::unordered_map<std::string, int> cache_res;
+  
+  void calcVirtualSize();  
   
 public:
   wxImagePanel(wxFrame* parent, wxString file, wxBitmapType format);

@@ -2,6 +2,8 @@
 #include <list>
 #include <wx/wx.h>
 #include <wx/sizer.h>
+#include <wx/filefn.h>
+#include <wx/settings.h>
 #include "image_panel.h"
 #include "photos.h"
 
@@ -20,7 +22,7 @@ wxScrolledWindow(parent),
 {
   w = -1;
   h = -1;
-  SetVirtualSize(400,50000);
+  //  SetVirtualSize(400,50000);
   SetScrollRate(1, 50);
   m_timer.Start(300);
   SetBackgroundColour(*wxWHITE);
@@ -74,11 +76,12 @@ void wxImagePanel::increaseResolution()
       wxBitmap* resized;
       std::string id = it.first;
       std::string filename = "/Users/agiardina/agallery/thumbs/320/" +  id + ".jpg";
-      image.LoadFile(filename, wxBITMAP_TYPE_JPEG);
-      resized = new wxBitmap(image.Scale(cache_w[id],cache_h[id],wxIMAGE_QUALITY_HIGH),-1,2.0);
-      delete cache[id];
-      cache[id] = resized;
-      cache_res[id] = 320;
+      if (wxFileExists(filename) && image.LoadFile(filename, wxBITMAP_TYPE_JPEG)) {
+	resized = new wxBitmap(image.Scale(cache_w[id],cache_h[id],wxIMAGE_QUALITY_HIGH),-1,2.0);
+	delete cache[id];
+	cache[id] = resized;
+	cache_res[id] = 320;
+      }
     }
   }
   Refresh();
@@ -121,7 +124,7 @@ void wxImagePanel::render(wxDC&  dc)
 
 	  std::string filename = "/Users/agiardina/agallery/thumbs/320/" +  id + ".jpg";
 	  wxImage image;
-	  if (image.LoadFile(filename, wxBITMAP_TYPE_JPEG)) {
+	  if (wxFileExists(filename) && image.LoadFile(filename, wxBITMAP_TYPE_JPEG)) {
 		
 	    img_width = image.GetWidth();
 	    img_height = image.GetHeight();
@@ -173,12 +176,34 @@ void wxImagePanel::render(wxDC&  dc)
   }
 }
 
-void wxImagePanel::OnSize(wxSizeEvent& event){
+void wxImagePanel::calcVirtualSize()
+{
+  if (photos.size()) {
+    int neww, newh;
+    int n_cols = 5; //@todo move globally
+    int n_rows = 0;
+    int box_size = 0;
+    int virtual_width = 400;
+    int virtual_height = 0;
+    GetSize( &neww, &newh);
+    box_size = (neww-15) / n_cols;
+    n_rows = photos.size() / n_cols;
+    if (photos.size() % n_cols != 0) n_rows++;
+    virtual_height = n_rows * box_size;
+    SetVirtualSize(virtual_width,virtual_height);
+  }
+}
+
+void wxImagePanel::OnSize(wxSizeEvent& event)
+{
+  calcVirtualSize();
   cache.clear();
   Refresh();
   event.Skip();
 }
 
-void wxImagePanel::setPhotos(std::vector<photo> photos){
-  this->photos = photos;
+void wxImagePanel::setPhotos(std::vector<photo> v_photos)
+{
+  photos = v_photos;
+  calcVirtualSize();
 }
