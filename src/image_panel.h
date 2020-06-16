@@ -12,6 +12,13 @@ class wxImagePanel : public wxScrolledWindow
 private:
   int w, h;
   int vscroll = 0;
+  int virtual_height = 0;
+  int virtual_width = 0;  
+  int n_cols = 5;
+  int n_rows = 0;
+  int box_size = 0;
+  int img_size = 0;  
+  
   wxTimer m_timer;
   std::vector<photo> photos;
   std::unordered_map<std::string, wxBitmap*> cache;
