@@ -39,6 +39,7 @@ void wxImagePanel::OnTimer(wxTimerEvent& event)
 
 void wxImagePanel::OnScroll(wxScrollWinEvent & evt)
 {
+  repaint = true;
   int step = 8;
   if (wxEVT_SCROLLWIN_LINEUP == evt.GetEventType() && vscroll > step) {
     vscroll=vscroll-step;
@@ -62,6 +63,7 @@ void wxImagePanel::paintNow()
 
 void wxImagePanel::increaseResolution()
 {
+  bool refresh = false;
   for (auto& it: cache) {
     if (cache_res.at(it.first) == 60) {
       wxImage image;      
@@ -69,6 +71,8 @@ void wxImagePanel::increaseResolution()
       std::string id = it.first;
       std::string filename = "/Users/agiardina/agallery/thumbs/320/" +  id + ".jpg";
       if (wxFileExists(filename) && image.LoadFile(filename, wxBITMAP_TYPE_JPEG)) {
+	std::cout << "Improve resolution\n";
+	refresh = true;
 	resized = new wxBitmap(image.Scale(cache_w[id],cache_h[id],wxIMAGE_QUALITY_HIGH),-1,2.0);
 	delete cache[id];
 	cache[id] = resized;
@@ -76,11 +80,17 @@ void wxImagePanel::increaseResolution()
       }
     }
   }
-  Refresh();
+
+  if (refresh) {
+    repaint = true;
+    Refresh();
+  }
 }
 
 void wxImagePanel::render(wxDC&  dc)
 {
+  std::cout << "render called" << "\n";
+  
   int neww, newh;
   GetClientSize(&neww,&newh);
   int n_visible_rows = (newh / box_size) + 2;
@@ -89,68 +99,67 @@ void wxImagePanel::render(wxDC&  dc)
   int voffset = vscroll % box_size;
   std::unordered_set<std::string> render_set;
 
-  //SetVirtualSize(400,box_size*photos.size()/n_cols);
-
-  //    if (w != neww || h != newh) {
-  if (photos.size() > 0) {
-    for (int row=start_row;row<start_row+n_visible_rows;row++) {
-      for (int col=0;col<n_cols;col++) {
-	unsigned long i = 0;
-	if (i<photos.size()) {
-	  int left, top;
-	  int img_width;
-	  int img_height;
-	  int new_img_width;
-	  int new_img_height;
-	  double ratio;
-	  wxImage image;
-	  std::string id;
+  if (repaint) {
+    repaint = false;
+    if (photos.size() > 0) {
+      for (int row=start_row;row<start_row+n_visible_rows;row++) {
+	for (int col=0;col<n_cols;col++) {
+	  unsigned long i = 0;
+	  if (i<photos.size()) {
+	    int left, top;
+	    int img_width;
+	    int img_height;
+	    int new_img_width;
+	    int new_img_height;
+	    double ratio;
+	    wxImage image;
+	    std::string id;
 	  
-	  i = (row*n_cols)+col;
-	  id = std::to_string(photos[i].id);
-	  render_set.insert(id);
+	    i = (row*n_cols)+col;
+	    id = std::to_string(photos[i].id);
+	    render_set.insert(id);
 
-	  std::string filename = "/Users/agiardina/agallery/thumbs/320/" +  id + ".jpg";
-	  if (wxFileExists(filename) && image.LoadFile(filename, wxBITMAP_TYPE_JPEG)) {
+	    std::string filename = "/Users/agiardina/agallery/thumbs/320/" +  id + ".jpg";
+	    if (wxFileExists(filename) && image.LoadFile(filename, wxBITMAP_TYPE_JPEG)) {
 		
-	    img_width = image.GetWidth();
-	    img_height = image.GetHeight();
-	    ratio = (double)img_width / (double)img_height;
+	      img_width = image.GetWidth();
+	      img_height = image.GetHeight();
+	      ratio = (double)img_width / (double)img_height;
 
-	    if (img_width > img_height) {
-	      new_img_width = img_size;
-	      new_img_height = new_img_width / ratio;
+	      if (img_width > img_height) {
+		new_img_width = img_size;
+		new_img_height = new_img_width / ratio;
+	      } else {
+		new_img_height = img_size;
+		new_img_width = ratio * new_img_height;
+	      }
+	      left = (box_size - new_img_width) / 2;
+	      top  = (box_size - new_img_height) / 2;
+
+	      wxBitmap* resized;
+	      if (cache.find(id) == cache.end()) {
+		cache_w[id] = new_img_width*dpi;
+		cache_h[id] = new_img_height*dpi;
+		cache_res[id] = 60;	  
+		//resized = new wxBitmap(image.Scale(new_img_width*dpi,new_img_height*dpi,wxIMAGE_QUALITY_HIGH),-1,dpi);
+		resized = new wxBitmap(image.Scale(cache_w[id],cache_h[id],wxIMAGE_QUALITY_NEAREST),-1,dpi);
+		cache[id] = resized;
+	      }
+
+	      cache_x[id] = (col*box_size)+left;
+	      cache_y[id] = ((row-start_row)*box_size)+top-voffset;
+
+	      w = neww;
+	      h = newh;
+	      dc.DrawBitmap(*cache[id], cache_x[id], cache_y[id], false );
 	    } else {
-	      new_img_height = img_size;
-	      new_img_width = ratio * new_img_height;
- 	    }
-	    left = (box_size - new_img_width) / 2;
-	    top  = (box_size - new_img_height) / 2;
-
-	    wxBitmap* resized;
-	    if (cache.find(id) == cache.end()) {
-	      cache_w[id] = new_img_width*dpi;
-	      cache_h[id] = new_img_height*dpi;
-	      cache_res[id] = 60;	  
-	      //resized = new wxBitmap(image.Scale(new_img_width*dpi,new_img_height*dpi,wxIMAGE_QUALITY_HIGH),-1,dpi);
-	      resized = new wxBitmap(image.Scale(cache_w[id],cache_h[id],wxIMAGE_QUALITY_NEAREST),-1,dpi);
-	      cache[id] = resized;
+	      std::cout << "File not foud " << id << "\n";
 	    }
-
-	    cache_x[id] = (col*box_size)+left;
-	    cache_y[id] = ((row-start_row)*box_size)+top-voffset;
-
-	    w = neww;
-	    h = newh;
-	    dc.DrawBitmap(*cache[id], cache_x[id], cache_y[id], false );
-	  } else {
-	    std::cout << "File not foud " << id << "\n";
 	  }
 	}
       }
     }
   }
-  //}
   
   //Cleaning up memory for out of view images
   std::list<std::unordered_map<std::string,wxBitmap*>::const_iterator> itrs;
@@ -178,10 +187,13 @@ void wxImagePanel::calcVirtualSize()
     virtual_height = n_rows * box_size;
     SetVirtualSize(virtual_width,virtual_height);
   }
+  repaint = true;
 }
 
 void wxImagePanel::OnSize(wxSizeEvent& event)
 {
+  int neww, newh;
+  GetClientSize( &neww, &newh);
   calcVirtualSize();
   cache.clear();
   Refresh();
@@ -189,7 +201,7 @@ void wxImagePanel::OnSize(wxSizeEvent& event)
 }
 
 void wxImagePanel::setPhotos(std::vector<photo> v_photos)
-{
+{  
   photos = v_photos;
   calcVirtualSize();
 }
