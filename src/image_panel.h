@@ -10,6 +10,8 @@
 class wxImagePanel : public wxScrolledWindow
 {
 private:
+  bool repaint = true;
+  
   int w, h;
   int vscroll = 0;
   int virtual_height = 0;
@@ -28,10 +30,13 @@ private:
   std::unordered_map<std::string, int> cache_h;  
   std::unordered_map<std::string, int> cache_res;
   
-  void calcVirtualSize();  
+  void calcVirtualSize();
+  void cleanCache();
+  int getClientHeight();
+  int maxScroll();
   
 public:
-  wxImagePanel(wxFrame* parent, wxString file, wxBitmapType format);
+  wxImagePanel(wxFrame* parent);
     
   void paintEvent(wxPaintEvent & evt);
   void paintNow();

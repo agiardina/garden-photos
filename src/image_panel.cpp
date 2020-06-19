@@ -8,6 +8,8 @@
 #include "photos.h"
 
 #define TIMER_ID 100
+#define LOW_RES 0
+#define HIGH_RES 1
 
 BEGIN_EVENT_TABLE(wxImagePanel, wxScrolledWindow)
 EVT_PAINT(wxImagePanel::paintEvent)
@@ -16,7 +18,7 @@ EVT_SCROLLWIN(wxImagePanel::OnScroll)
 EVT_TIMER(TIMER_ID, wxImagePanel::OnTimer)
 END_EVENT_TABLE()
 
-wxImagePanel::wxImagePanel(wxFrame* parent, wxString file, wxBitmapType format) :
+wxImagePanel::wxImagePanel(wxFrame* parent):
 wxScrolledWindow(parent),
   m_timer(this, TIMER_ID)
 {
@@ -27,11 +29,24 @@ wxScrolledWindow(parent),
   SetBackgroundColour(*wxWHITE);
 }
 
+int wxImagePanel::getClientHeight()
+{
+  int neww, newh;
+  GetClientSize(&neww,&newh);
+  return newh;
+}
+
+int wxImagePanel::maxScroll()
+{
+  return std::max(0,virtual_height - getClientHeight());
+}
+
 void wxImagePanel::paintEvent(wxPaintEvent & evt)
 {
   wxPaintDC dc(this);
   render(dc);
 }
+
 void wxImagePanel::OnTimer(wxTimerEvent& event)
 {
   increaseResolution();
@@ -48,6 +63,13 @@ void wxImagePanel::OnScroll(wxScrollWinEvent & evt)
   } else {
     vscroll = evt.GetPosition();    
   }
+
+
+  std::cout << "Client Height " << getClientHeight() << "\n";
+  std::cout << "Vscroll " << vscroll << "\n";  
+  std::cout << "virtual height " << virtual_height << "\n";
+  
+  if (vscroll > maxScroll()) vscroll = maxScroll();
   m_timer.Stop();
   Scroll(0,vscroll);  
   Refresh();
@@ -65,7 +87,7 @@ void wxImagePanel::increaseResolution()
 {
   bool refresh = false;
   for (auto& it: cache) {
-    if (cache_res.at(it.first) == 60) {
+    if (cache_res.at(it.first) == LOW_RES) {
       wxImage image;      
       wxBitmap* resized;
       std::string id = it.first;
@@ -76,7 +98,7 @@ void wxImagePanel::increaseResolution()
 	resized = new wxBitmap(image.Scale(cache_w[id],cache_h[id],wxIMAGE_QUALITY_HIGH),-1,2.0);
 	delete cache[id];
 	cache[id] = resized;
-	cache_res[id] = 320;
+	cache_res[id] = HIGH_RES;
       }
     }
   }
@@ -140,7 +162,7 @@ void wxImagePanel::render(wxDC&  dc)
 	      if (cache.find(id) == cache.end()) {
 		cache_w[id] = new_img_width*dpi;
 		cache_h[id] = new_img_height*dpi;
-		cache_res[id] = 60;	  
+		cache_res[id] = LOW_RES;	  
 		//resized = new wxBitmap(image.Scale(new_img_width*dpi,new_img_height*dpi,wxIMAGE_QUALITY_HIGH),-1,dpi);
 		resized = new wxBitmap(image.Scale(cache_w[id],cache_h[id],wxIMAGE_QUALITY_NEAREST),-1,dpi);
 		cache[id] = resized;
@@ -153,7 +175,7 @@ void wxImagePanel::render(wxDC&  dc)
 	      h = newh;
 	      dc.DrawBitmap(*cache[id], cache_x[id], cache_y[id], false );
 	    } else {
-	      std::cout << "File not foud " << id << "\n";
+	      //std::cout << "File not foud " << id << "\n";
 	    }
 	  }
 	}
@@ -174,6 +196,19 @@ void wxImagePanel::render(wxDC&  dc)
   }
 }
 
+void wxImagePanel::cleanCache()
+{
+  for (auto x = cache.cbegin(); x != cache.cend(); x++) {
+    delete x->second;
+  }
+  cache.clear();
+  cache_x.clear();
+  cache_y.clear();
+  cache_w.clear();
+  cache_h.clear();
+  cache_res.clear();
+}
+
 void wxImagePanel::calcVirtualSize()
 {
   if (photos.size()) {
@@ -185,6 +220,10 @@ void wxImagePanel::calcVirtualSize()
     n_rows = photos.size() / n_cols;
     if (photos.size() % n_cols != 0) n_rows++;
     virtual_height = n_rows * box_size;
+    if (vscroll > maxScroll()) {
+      vscroll = maxScroll();
+      Scroll(0,vscroll);
+    }
     SetVirtualSize(virtual_width,virtual_height);
   }
   repaint = true;
@@ -195,7 +234,7 @@ void wxImagePanel::OnSize(wxSizeEvent& event)
   int neww, newh;
   GetClientSize( &neww, &newh);
   calcVirtualSize();
-  cache.clear();
+  cleanCache();
   Refresh();
   event.Skip();
 }

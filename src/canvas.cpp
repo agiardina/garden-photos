@@ -80,7 +80,7 @@ public:
     toolbar->AddTool(wxID_EXIT, wxT("Exit application"), exit);
     toolbar->Realize();	
 
-    drawPane = new wxImagePanel( frame, wxT("image.jpg"), wxBITMAP_TYPE_JPEG);
+    drawPane = new wxImagePanel(frame);
     drawPane->setPhotos(photos.get_all_photos());
     sizer->Add(drawPane, 1, wxEXPAND);	
         
