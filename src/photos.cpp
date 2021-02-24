@@ -5,6 +5,7 @@
 #include "Poco/Glob.h"
 #include "Poco/File.h"
 #include "Poco/RecursiveDirectoryIterator.h"
+#include "Poco/Environment.h"
 #include "photos.h"
 #include <exiv2/exiv2.hpp>
 #include <opencv2/opencv.hpp>
@@ -107,7 +108,7 @@ photos::gallery gallery_by_path(const std::string& path,Poco::Data::Session& ses
     return g;
 }
 
-int select_photo_id_from_path(std::string photo_path,Poco::Data::Session& session)
+int select_photo_id_from_path(std::string& photo_path,Poco::Data::Session& session)
 {
     Poco::Data::Statement select(session);
     photo curr_photo = {};
@@ -131,7 +132,7 @@ int select_photo_id_from_path(std::string photo_path,Poco::Data::Session& sessio
     return curr_photo.id;
 };
 
-int insert_photo(photos::photo photo, Poco::Data::Session& session)
+int insert_photo(photos::photo& photo, Poco::Data::Session& session)
 {
     Poco::Data::Statement insert(session);
     insert << "INSERT INTO photos (path,width,height,size,date_time_original,orientation,gallery_id) VALUES (?,?,?,?,?,?,?)",
@@ -147,11 +148,49 @@ int insert_photo(photos::photo photo, Poco::Data::Session& session)
     return select_photo_id_from_path(photo.path,session);
 };
 
+
+inline std::pair<int, int> calc_width_height(int width,int height,int max_size)
+{
+    int new_img_width, new_img_height;
+    double ratio = (double)width / (double)height;
+    
+    if(width > height)
+    {
+        new_img_width = max_size;
+        new_img_height = (int)(new_img_width / ratio);
+    } else {
+        new_img_height = max_size;
+        new_img_width = (int)(ratio * new_img_height);
+    }
+    return std::make_pair(new_img_width, new_img_height);
+};
+
+void create_thumb(const cv::Mat &input,int photo_id, int width, int height, const std::string &thumbs_path,int max_size)
+{
+    int new_width,new_height;
+    std::tie(new_width,new_height) = calc_width_height(width,height,max_size);
+    std::string thumb_path = thumbs_path + "/"+std::to_string(max_size)+"/" + std::to_string(photo_id) + ".jpg";
+    
+    cv::Mat resized;
+    cv::resize(input, resized, cv::Size(new_width,new_height));
+    cv::imwrite(thumb_path, resized);
+    std::cout << thumb_path << " saved\n";
+};
+
+void create_thumbs(const std::string &photo_path,int photo_id, int original_width, int original_height, const std::string &thumbs_path)
+{
+    cv::Mat input = cv::imread(photo_path, cv::IMREAD_COLOR);
+    create_thumb(input,photo_id,original_width,original_height,thumbs_path,960);
+    create_thumb(input,photo_id,original_width,original_height,thumbs_path,320);
+    create_thumb(input,photo_id,original_width,original_height,thumbs_path,60);
+};
+
 bool add_photo_to_gallery(photos::photo photo, const photos::gallery& gallery,Poco::Data::Session& session,const std::string& thumbs_path)
 {
     if (photo.width && photo.height) {
         photo.gallery_id = gallery.id;
         int photo_id = insert_photo(photo,session);
+        create_thumbs(photo.path, photo_id, photo.width, photo.height,thumbs_path);
         return true;
     } else {
         return false;
@@ -186,7 +225,12 @@ std::string exif_date(Exiv2::ExifData &exif)
 
 int exif_orientation(Exiv2::ExifData &exif)
 {
-    return utils::str_to_int(exif_key(exif,"Exif.Image.Orientation"),1);
+    int orientation = utils::str_to_int(exif_key(exif,"Exif.Image.Orientation"),1);
+    if (orientation < 1 || orientation > 8) {
+        return 1;
+    } else {
+        return orientation;
+    }
 };
 
 int exif_width(Exiv2::ExifData &exif)
@@ -309,11 +353,6 @@ std::vector<std::string> photos_on_folder(std::string base_path)
         }
     }
     return files;
-};
-
-void create_thumbs(const std::string &photo_path,int photo_id, const std::string &thumbs_path)
-{
-    
 };
 
 
