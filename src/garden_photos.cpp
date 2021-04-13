@@ -1,7 +1,6 @@
 #include <iostream>
 #include <wx/wx.h>
 #include <wx/frame.h>
-#include <wx/sizer.h>
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
 #include <wx/config.h>
@@ -17,7 +16,10 @@
 #include <wx/progdlg.h>
 #include <wx/button.h>
 #include <wx/sizer.h>
+#include <wx/statbmp.h>
 #include "garden_photos.h"
+#include "sidebar_item.h"
+#include "sidebar.h"
 
 using namespace Poco::Data::Keywords;
 using Poco::Data::Session;
@@ -64,13 +66,11 @@ bool garden_photos::OnInit()
     wxInitAllImageHandlers();
     
     wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
-    frame = new wxFrame(NULL, wxID_ANY, wxT("Garden Photos"), wxPoint(50,50), wxSize(1024,768), wxDEFAULT_FRAME_STYLE);
+    frame = new wxFrame(NULL, wxID_ANY, wxT(""), wxPoint(50,50), wxSize(1024,768), wxDEFAULT_FRAME_STYLE);
     
     menu = new Menu();
     frame->SetMenuBar(menu->menubar);
     frame->Bind(wxEVT_COMMAND_MENU_SELECTED, &garden_photos::onImport, this, IMPORT_FOLDER);
-    
-    sidebar = new wxPanel(frame);
     
     wxToolBar* toolbar = new wxToolBar(frame, -1);
     toolbar->SetWindowStyle(wxNO_BORDER);
@@ -79,40 +79,31 @@ bool garden_photos::OnInit()
     toolbar->Realize();
 
     drawPane = new image_panel(frame);
-    image_panel_controller *controller = new image_panel_controller();
-    controller->init(*drawPane, *session, std::string(thumbs_path.mb_str()));
+    m_image_panel_controller = new image_panel_controller();
+    m_image_panel_controller->init(*drawPane, *session, std::string(thumbs_path.mb_str()));
     
+    sid = new sidebar(frame);
+    sid->init();
+    sid->Bind(GP_SIDEBAR_CLICK, &garden_photos::on_sidebar_click,this);
     
-    sidebar = new wxPanel(frame);
-    sidebar->SetWindowStyle(wxNO_BORDER);
-    wxPanel* btn = new wxPanel(sidebar);
-    wxStaticText* photos_label = new wxStaticText(btn, wxID_ANY, "All Photos");
-    wxStaticText* fav_label = new wxStaticText(btn, wxID_ANY, "Favorites");
-    photos_label->SetForegroundColour(wxColor(255,255,255));
-    
-    wxSizer* sidebar_sizer = new wxBoxSizer(wxVERTICAL);
-    wxSizer* btn_sizer = new wxBoxSizer(wxVERTICAL);
-    btn_sizer->SetMinSize(300, 50);
-    sidebar->SetSizer(sidebar_sizer);
-    btn->SetSizer(btn_sizer);
-    
-    
-//    btn->SetBackgroundColour(wxColour(10,10,10));
-    btn->SetSize(400, 200);
-    
-    wxStaticBitmap* photos_icon = new wxStaticBitmap();
-    photos_icon->SetBitmap(wxBitmap(wxT("/Users/agiardina/dev/garden-photos/icons/photos.png"), wxBITMAP_TYPE_PNG));
-    
-    btn_sizer->Add(photos_icon,wxSizerFlags().Expand().Border(wxALL, 5));
-    btn_sizer->Add(photos_label,wxSizerFlags().Expand().Border(wxALL, 5));
-//    btn_sizer->Add(fav_label,wxSizerFlags().Expand().Border(wxALL, 5));
-    sidebar_sizer->Add(btn,wxSizerFlags(0).Center());
-    sizer->Add(sidebar, 0, wxALIGN_LEFT);
+    sizer->Add(sid, 0, wxALIGN_LEFT);
     sizer->Add(drawPane, 2, wxEXPAND);
     frame->SetSizer(sizer);
     frame->Show();
     
     return true;
+}
+
+void garden_photos::on_sidebar_click(wxCommandEvent& event)
+{
+    std::string uid = std::string(event.GetString().mb_str());
+    sid->set_active_item(uid);
+    
+    if (uid=="photos") {
+        m_image_panel_controller->load_photos();
+    } else if (uid=="favorites") {
+        m_image_panel_controller->load_favorites_photos();
+    }
 }
     
 void garden_photos::onImport( wxEvent& WXUNUSED(event) )
