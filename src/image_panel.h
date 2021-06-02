@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <wx/event.h>
 #include <wx/wx.h>
 #include <wx/sizer.h>
 #include "config.h"
@@ -6,6 +7,8 @@
 
 #ifndef _IMAGE_PANEL_H_
 #define _IMAGE_PANEL_H_
+
+wxDECLARE_EVENT(GP_PHOTO_CHANGED, wxCommandEvent);
 
 class garden_photos;
 
@@ -40,6 +43,7 @@ private:
     std::unordered_map<std::string, int> cache_res;
     int get_client_height();
     int max_scroll();
+    int photo_id(int id);
     void bind_events();
   
 public:

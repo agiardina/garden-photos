@@ -41,9 +41,11 @@ private:
 public:
     using wxFrame::wxFrame;
     void init(config &cfg, Poco::Data::Session &session);
-    void on_import( wxEvent& WXUNUSED(event) );
+    void on_import(wxEvent& WXUNUSED(event));
     void on_sidebar_click(wxCommandEvent& event);
+    void on_photo_changed(wxCommandEvent& event);
     void on_favorite_toggle(wxEvent& event);
+    void show_photo_as_favorite(bool is_favorite);
 };
 
 #endif /* main_frame_h */

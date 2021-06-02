@@ -12,6 +12,8 @@
 #define LOW_RES 0
 #define HIGH_RES 1
 
+wxDEFINE_EVENT(GP_PHOTO_CHANGED, wxCommandEvent);
+
 BEGIN_EVENT_TABLE(image_panel, wxScrolledWindow)
 EVT_SCROLLWIN(image_panel::OnScroll)
 EVT_TIMER(TIMER_ID, image_panel::OnTimer)
@@ -35,6 +37,17 @@ void image_panel::init(config &cfg, Poco::Data::Session &session)
     m_thumbs_path = m_cfg->thumbs_path();
     load_photos();
     bind_events();
+}
+
+int image_panel::photo_id(int id)
+{
+    if (id!=m_photo_id) {
+        m_photo_id = id;
+        wxCommandEvent event(GP_PHOTO_CHANGED);
+        event.SetInt(id);
+        wxPostEvent(this, event);
+    }
+    return m_photo_id;
 }
 
 int image_panel::displayed_photo()
@@ -278,8 +291,8 @@ void image_panel::set_virtual_size(int n_photos)
 
 void image_panel::reset()
 {
+    photo_id(0);
     m_photo_mode = false;
-    m_photo_id = 0;
     m_photo_n = 0;
     set_virtual_size(m_photos.size());
     clean_cache();
@@ -306,7 +319,7 @@ void image_panel::on_paint(wxPaintEvent& evt)
 
 void image_panel::on_dbl_click(wxMouseEvent& evt)
 {
-    m_photo_id  = id_at_xy(evt.m_x, evt.m_y);
+    photo_id(id_at_xy(evt.m_x, evt.m_y));
     m_photo_n = box_n_at_xy(evt.m_x, evt.m_y);
     m_photo_mode = true;
     
@@ -325,7 +338,7 @@ void image_panel::next_photo()
     if (m_photo_n < m_photos.size()-1) {
         photos::photo photo = m_photos.at(m_photo_n+1);
         m_photo_n += 1;
-        m_photo_id = photo.id;
+        photo_id(photo.id);
         m_photo_path = m_thumbs_path + "/960/" + std::to_string(m_photo_id) + ".jpg";
         Refresh();
     }
@@ -336,7 +349,7 @@ void image_panel::prev_photo()
     if (m_photo_n > 0) {
         photos::photo photo = m_photos.at(m_photo_n-1);
         m_photo_n -= 1;
-        m_photo_id = photo.id;
+        photo_id(photo.id);
         m_photo_path = m_thumbs_path + "/960/" + std::to_string(m_photo_id) + ".jpg";
         Refresh();
     }

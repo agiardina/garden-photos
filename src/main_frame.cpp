@@ -6,6 +6,7 @@
 //
 
 #include <Poco/Data/Session.h>
+#include <wx/event.h>
 #include <wx/toolbar.h>
 #include <wx/colour.h>
 #include <wx/dirdlg.h>
@@ -16,7 +17,6 @@
 #include "menu.h"
 #include "config.h"
 #include "photos.h"
-
 
 void main_frame::init(config &cfg, Poco::Data::Session &session)
 {
@@ -64,6 +64,7 @@ void main_frame::bind_events()
     Bind(wxEVT_COMMAND_MENU_SELECTED, &main_frame::on_import, this, IMPORT_FOLDER);
     Bind(wxEVT_COMMAND_MENU_SELECTED, &main_frame::on_favorite_toggle, this, GP_TOGGLE_FAVORITE);
     Bind(GP_SIDEBAR_CLICK, &main_frame::on_sidebar_click,this);
+    Bind(GP_PHOTO_CHANGED, &main_frame::on_photo_changed,this);
 }
 
 void main_frame::on_favorite_toggle( wxEvent& event)
@@ -71,13 +72,7 @@ void main_frame::on_favorite_toggle( wxEvent& event)
     int photo_id = m_main_panel->displayed_photo();
     if (photo_id > 0) { //No current photo displayed
         photos::photo curr_photo = photos::toggle_favorite(photo_id, *m_session);
-        std::string icon = "";
-        if (curr_photo.is_favorite) {
-            icon = "favoritewhite";
-        } else {
-            icon = "favorite";
-        }
-        GetToolBar()->SetToolNormalBitmap(GP_TOGGLE_FAVORITE,utils::toolbar_icon(icon,GetContentScaleFactor()));
+        show_photo_as_favorite(curr_photo.is_favorite);
     }
 }
 
@@ -112,5 +107,21 @@ void main_frame::on_sidebar_click(wxCommandEvent& event)
         m_main_panel->load_photos();
     } else if (uid=="favorites") {
         m_main_panel->load_favorites_photos();
+    }
+}
+
+void main_frame::on_photo_changed(wxCommandEvent &event)
+{
+    int id_photo = event.GetInt();
+    photos::photo curr_photo = photos::select_photo_from_id(id_photo, *m_session);
+    show_photo_as_favorite(curr_photo.is_favorite);
+}
+
+void main_frame::show_photo_as_favorite(bool is_favorite)
+{
+    if (is_favorite) {
+        GetToolBar()->SetToolNormalBitmap(GP_TOGGLE_FAVORITE,utils::toolbar_icon("favoritewhite",GetContentScaleFactor()));
+    } else {
+        GetToolBar()->SetToolNormalBitmap(GP_TOGGLE_FAVORITE,utils::toolbar_icon("favorite",GetContentScaleFactor()));
     }
 }
