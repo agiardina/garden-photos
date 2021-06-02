@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.19)
 
 # Our project is called 'minimal' this is how it will be called in
 # visual studio, and in our makefiles. 
-project(gardenphotos)
+project(GardenPhotos)
 
 # Location where cmake first looks for cmake modules.
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}")
@@ -47,7 +47,37 @@ include( "${wxWidgets_USE_FILE}" )
 
 # For convenience we define the sources as a variable. You can add 
 # header files and cpp/c files and CMake will sort them out
-set(SRCS image_panel.cpp canvas.cpp photos.cpp menu.cpp)
+set(SRCS
+    src/utils.h
+    src/utils.cpp
+    src/garden_photos.h
+    src/garden_photos.cpp
+    src/image_panel.h
+    src/image_panel.cpp
+    src/photos.h
+    src/photos.cpp
+    src/menu.h
+    src/menu.cpp    
+    src/sidebar.h
+    src/sidebar.cpp    
+    src/sidebar_item.h
+    src/sidebar_item.cpp
+    src/main_frame.h
+    src/main_frame.cpp
+    src/config.h
+    src/config.cpp
+)
+
+set(RESOURCE_FILES
+icons/photos-24.png
+icons/photos-18.png
+icons/photos-72.png  
+icons/favorite-18.png
+icons/favorite-24.png
+icons/favorite-48.png
+icons/favoritewhite-24.png
+icons/favoritewhite-48.png
+)
 
 # If we build for windows systems, we also include the resource file
 # containing the manifest, icon and other resources
@@ -57,9 +87,14 @@ endif(WIN32)
 
 # Here we define the executable minimal.exe or minimal on other systems
 # the above paths and defines will be used in this build
-add_executable(gardenphotos WIN32 ${SRCS})
+add_executable(GardenPhotos WIN32 ${SRCS} ${RESOURCE_FILES})
 
 # We add to our target 'minimal' the wxWidgets libraries. These are
 # set for us by the find script. If you need other libraries, you
 # can add them here as well. 
-target_link_libraries(gardenphotos ${wxWidgets_LIBRARIES} exiv2 PocoDataSQLite opencv_core opencv_imgproc opencv_imgcodecs Poco::Data PocoFoundation ${CMAKE_CURRENT_SOURCE_DIR}/sqlite3.o)
+target_link_libraries(GardenPhotos ${wxWidgets_LIBRARIES} exiv2 PocoDataSQLite opencv_core opencv_imgproc opencv_imgcodecs Poco::Data PocoFoundation)
+  
+set_target_properties(GardenPhotos PROPERTIES
+  MACOSX_BUNDLE TRUE
+  MACOSX_FRAMEWORK_IDENTIFIER com.andreagiardina.GardenPhotos
+  RESOURCE "${RESOURCE_FILES}")

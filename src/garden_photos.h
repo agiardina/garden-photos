@@ -21,29 +21,21 @@
 #include "image_panel.h"
 #include "image_panel_controller.h"
 #include "photos.h"
-#include "menu.hpp"
-#include <wx/menu.h>
-#include <wx/dirdlg.h>
-#include <wx/progdlg.h>
+#include "menu.h"
+#include "config.h"
 #include "garden_photos.h"
+#include "main_frame.h"
 #include "sidebar.h"
 
 class garden_photos: public wxApp
 {
 private:
-    wxFrame *frame;
-    image_panel *drawPane;
-    image_panel_controller *m_image_panel_controller;
-    sidebar *sid;
-    Menu *menu;
+    config* m_cfg;
+    main_frame *frame;
     Poco::Data::Session *session;
-    std::string thumbs_path;
-    
-    //wxPanel *main;
-    
+
 public:
     bool OnInit();
-    void onImport( wxEvent& WXUNUSED(event) );
     void on_sidebar_click(wxCommandEvent& event);
     void show_photo(int id);
 };

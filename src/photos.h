@@ -34,12 +34,15 @@ struct gallery {
 };
 
 std::vector<photo> all_photos(Poco::Data::Session& session);
+std::vector<photo> favorites_photos(Poco::Data::Session& session);
 std::vector<std::string> photos_on_folder(std::string base_path);
 photo path_to_photo(std::string path);
 gallery gallery_by_path(const std::string& path,Poco::Data::Session& session);
 bool add_photo_to_gallery(photos::photo photo, const photos::gallery& gallery,Poco::Data::Session& session,const std::string& thumbs_path);
 bool add_photo_to_gallery(const std::string& photo_path, const photos::gallery& gallery, Poco::Data::Session& session, const std::string& thumbs_path);
-
+photo select_photo_from_id(int id,Poco::Data::Session& session);
+inline std::pair<int, int> calc_width_height(int width,int height,int max_size);
+std::pair<int, int> calc_width_height(int width,int height,int fit_width, int fit_height);
 
 // NAMESPSACE START
 // ------------------------------------------------------------

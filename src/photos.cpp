@@ -7,6 +7,7 @@
 #include "Poco/RecursiveDirectoryIterator.h"
 #include "Poco/Environment.h"
 #include "photos.h"
+#include "utils.h"
 #include <exiv2/exiv2.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
@@ -19,19 +20,6 @@ using Poco::Data::Session;
 using Poco::Data::Statement;
 using Poco::Glob;
 
-namespace utils {
-    int str_to_int(const std::string s, const int default_value=0) {
-        if (s=="") {
-            return default_value;
-        } else {
-            try {
-                return std::stoi(s);
-            } catch(...) {
-                return default_value;
-            }
-        }
-    }
-};
 
 namespace photos
 {
@@ -40,7 +28,8 @@ int EXIF_INVALID_GPS = 1000;
     
 // NAMESPSACE START
 // ------------------------------------------------------------
-std::vector<photo> all_photos(Poco::Data::Session& session)
+
+std::vector<photo> query_photos_id(Poco::Data::Session& session,std::string query)
 {
     std::vector<photo> result;
     Statement select(session);
@@ -51,7 +40,7 @@ std::vector<photo> all_photos(Poco::Data::Session& session)
         1000
     };
     
-    select << "SELECT id FROM photos ORDER BY date_time_original DESC", into(curr_photo.id), range(0, 1);
+    select << query, into(curr_photo.id), range(0, 1);
     
     while (!select.done())
     {
@@ -71,8 +60,18 @@ std::vector<photo> all_photos(Poco::Data::Session& session)
     return result;
 };
 
+std::vector<photo> all_photos(Poco::Data::Session& session)
+{
+    return query_photos_id(session, "SELECT id FROM photos ORDER BY date_time_original DESC");
+};
 
-photos::gallery select_gallery_by_path(const std::string& path,Poco::Data::Session& session)
+std::vector<photo> favorites_photos(Poco::Data::Session& session)
+{
+    return query_photos_id(session, "SELECT id FROM photos WHERE is_favorite = 1 ORDER BY date_time_original DESC");
+};
+
+
+gallery select_gallery_by_path(const std::string& path,Poco::Data::Session& session)
 {
     photos:gallery g;
     Poco::Data::Statement select(session);
@@ -88,7 +87,7 @@ photos::gallery select_gallery_by_path(const std::string& path,Poco::Data::Sessi
     return g;
 };
 
-photos::gallery insert_gallery(gallery g,Poco::Data::Session& session)
+gallery insert_gallery(gallery g,Poco::Data::Session& session)
 {
     Poco::Data::Statement insert(session);
     insert << "INSERT INTO galleries (path) VALUES(?)",
@@ -97,7 +96,7 @@ photos::gallery insert_gallery(gallery g,Poco::Data::Session& session)
     return select_gallery_by_path(g.path, session);
 };
 
-photos::gallery gallery_by_path(const std::string& path,Poco::Data::Session& session)
+gallery gallery_by_path(const std::string& path,Poco::Data::Session& session)
 {
     photos:gallery g = select_gallery_by_path(path,session);
     if (g.id==0)
@@ -107,6 +106,36 @@ photos::gallery gallery_by_path(const std::string& path,Poco::Data::Session& ses
     }
     return g;
 }
+
+photo select_photo_from_id(int id,Poco::Data::Session& session)
+{
+    Poco::Data::Statement select(session);
+    photo curr_photo = {};
+
+    select << "SELECT id,path,width,height,orientation FROM photos WHERE id = ? LIMIT 1",
+                into(curr_photo.id),
+                into(curr_photo.path),
+                into(curr_photo.width),
+                into(curr_photo.height),
+                into(curr_photo.orientation),
+                Poco::Data::Keywords::use(id),
+                range(0, 1);
+
+    if (!select.done())
+    {
+        try
+        {
+            select.execute();
+        }
+        catch (Poco::Data::DataException &ex)
+        {
+            std::cout << ex.message();
+        }
+    }
+    return curr_photo;
+}
+
+
 
 int select_photo_id_from_path(std::string& photo_path,Poco::Data::Session& session)
 {
@@ -161,6 +190,24 @@ inline std::pair<int, int> calc_width_height(int width,int height,int max_size)
     } else {
         new_img_height = max_size;
         new_img_width = (int)(ratio * new_img_height);
+    }
+    return std::make_pair(new_img_width, new_img_height);
+};
+
+std::pair<int, int> calc_width_height(int width,int height,int fit_width, int fit_height)
+{
+    int new_img_width, new_img_height;
+    double ratio_wh = (double)width / (double)height;
+    double fit_ratio_wh = (double)fit_width / (double)fit_height;
+    
+    if(fit_ratio_wh > ratio_wh)
+    {
+        new_img_height = fit_height;
+        new_img_width = (int)(fit_height * ratio_wh);
+    } else {
+        new_img_width = fit_width;
+        new_img_height = (int)(fit_width / ratio_wh);
+        
     }
     return std::make_pair(new_img_width, new_img_height);
 };
@@ -348,7 +395,7 @@ std::vector<std::string> photos_on_folder(std::string base_path)
     for (SiblingsFirstRecursiveDirectoryIterator it(path); it != end; ++it)
     {
         std::string filename = it.path().toString();
-        if (it.path().getExtension()=="jpg") {
+        if (it.path().getExtension()=="jpg" || it.path().getExtension()=="jpeg") {
             files.push_back(it.path().toString(Poco::Path::PATH_NATIVE));
         }
     }
