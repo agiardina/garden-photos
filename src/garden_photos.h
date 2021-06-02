@@ -17,9 +17,7 @@
 #include <wx/config.h>
 #include <Poco/Data/Session.h>
 #include <Poco/Data/SQLite/Connector.h>
-#include "sqlite3.h"
 #include "image_panel.h"
-#include "image_panel_controller.h"
 #include "photos.h"
 #include "menu.h"
 #include "config.h"
