@@ -37,6 +37,15 @@ void image_panel::init(config &cfg, Poco::Data::Session &session)
     bind_events();
 }
 
+int image_panel::displayed_photo()
+{
+    int id = 0;
+    if (m_photo_mode) {
+        id = m_photo_id;
+    }
+    return id;
+}
+
 int image_panel::get_client_height()
 {
     int neww, newh;

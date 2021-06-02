@@ -26,6 +26,7 @@ struct photo {
     std::string path = "";
     unsigned int local_gallery_id = 0;
     std::string local_path = "";
+    bool is_favorite = false;
 };
 
 struct gallery {
@@ -41,6 +42,7 @@ gallery gallery_by_path(const std::string& path,Poco::Data::Session& session);
 bool add_photo_to_gallery(photos::photo photo, const photos::gallery& gallery,Poco::Data::Session& session,const std::string& thumbs_path);
 bool add_photo_to_gallery(const std::string& photo_path, const photos::gallery& gallery, Poco::Data::Session& session, const std::string& thumbs_path);
 photo select_photo_from_id(int id,Poco::Data::Session& session);
+photo toggle_favorite(int id,Poco::Data::Session& session);
 inline std::pair<int, int> calc_width_height(int width,int height,int max_size);
 std::pair<int, int> calc_width_height(int width,int height,int fit_width, int fit_height);
 

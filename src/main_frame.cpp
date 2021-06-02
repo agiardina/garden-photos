@@ -68,7 +68,17 @@ void main_frame::bind_events()
 
 void main_frame::on_favorite_toggle( wxEvent& event)
 {
-    GetToolBar()->SetToolNormalBitmap(GP_TOGGLE_FAVORITE,utils::toolbar_icon("favoritewhite",GetContentScaleFactor()));
+    int photo_id = m_main_panel->displayed_photo();
+    if (photo_id > 0) { //No current photo displayed
+        photos::photo curr_photo = photos::toggle_favorite(photo_id, *m_session);
+        std::string icon = "";
+        if (curr_photo.is_favorite) {
+            icon = "favoritewhite";
+        } else {
+            icon = "favorite";
+        }
+        GetToolBar()->SetToolNormalBitmap(GP_TOGGLE_FAVORITE,utils::toolbar_icon(icon,GetContentScaleFactor()));
+    }
 }
 
 void main_frame::on_import( wxEvent& WXUNUSED(event) )

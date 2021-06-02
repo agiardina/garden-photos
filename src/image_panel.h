@@ -65,6 +65,7 @@ public:
     void load_photos();
     void load_favorites_photos();
     void reset();
+    int displayed_photo();
     
     std::chrono::high_resolution_clock::time_point time = std::chrono::high_resolution_clock::now();
     DECLARE_EVENT_TABLE()

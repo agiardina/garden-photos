@@ -1,6 +1,5 @@
 #include <vector>
 #include <iostream>
-#include "sqlite3.h"
 #include "Poco/Exception.h"
 #include "Poco/Glob.h"
 #include "Poco/File.h"
@@ -112,12 +111,13 @@ photo select_photo_from_id(int id,Poco::Data::Session& session)
     Poco::Data::Statement select(session);
     photo curr_photo = {};
 
-    select << "SELECT id,path,width,height,orientation FROM photos WHERE id = ? LIMIT 1",
+    select << "SELECT id,path,width,height,orientation,is_favorite FROM photos WHERE id = ? LIMIT 1",
                 into(curr_photo.id),
                 into(curr_photo.path),
                 into(curr_photo.width),
                 into(curr_photo.height),
                 into(curr_photo.orientation),
+                into(curr_photo.is_favorite),
                 Poco::Data::Keywords::use(id),
                 range(0, 1);
 
@@ -135,7 +135,19 @@ photo select_photo_from_id(int id,Poco::Data::Session& session)
     return curr_photo;
 }
 
-
+photo toggle_favorite(int id,Poco::Data::Session& session)
+{
+    Poco::Data::Statement update(session);
+    
+    photo curr_photo = select_photo_from_id(id,session);
+    int is_favorite = !curr_photo.is_favorite;
+    
+    update << "UPDATE photos SET is_favorite = ? WHERE id = ?",
+    Poco::Data::Keywords::use(is_favorite),
+    Poco::Data::Keywords::use(id);
+    update.execute();
+    return select_photo_from_id(id,session);
+}
 
 int select_photo_id_from_path(std::string& photo_path,Poco::Data::Session& session)
 {
