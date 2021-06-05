@@ -11,9 +11,6 @@
 #include <wx/image.h>
 #include "utils.h"
 
-using namespace utils;
-
-
 int utils::str_to_int(const std::string s, const int default_value)
 {
     if (s=="") {
@@ -51,4 +48,13 @@ wxBitmap utils::toolbar_icon(const std::string str_icon,double scale)
         return wxBitmap(img,-1,scale);
     }
     
+}
+
+bool utils::is_dir_writable(Poco::File path)
+{
+    if (path.exists() && path.isDirectory() && path.canWrite()) {
+        return true;
+    } else {
+        return false;
+    }
 }
