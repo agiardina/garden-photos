@@ -66,7 +66,20 @@ set(SRCS
     src/main_frame.cpp
     src/config.h
     src/config.cpp
+    src/init.h
+    src/init.cpp
+    src/result.h
 )
+
+SET(CPACK_BUNDLE_NAME "GardenPhotos")
+SET(CPACK_BUNDLE_ICON "icons/icon.icns")
+SET(CPACK_BUNDLE_PLIST "Info.plist")
+
+
+set(MACOSX_BUNDLE_ICON_FILE icon.icns)
+set(APP_ICON_MACOSX ${CMAKE_CURRENT_SOURCE_DIR}/icons/icon.icns)
+set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES
+           MACOSX_PACKAGE_LOCATION "Resources")
 
 set(RESOURCE_FILES
 icons/photos-24.png
@@ -87,7 +100,7 @@ endif(WIN32)
 
 # Here we define the executable minimal.exe or minimal on other systems
 # the above paths and defines will be used in this build
-add_executable(GardenPhotos WIN32 ${SRCS} ${RESOURCE_FILES})
+add_executable(GardenPhotos WIN32 ${SRCS} ${RESOURCE_FILES} ${APP_ICON_MACOSX})
 
 # We add to our target 'minimal' the wxWidgets libraries. These are
 # set for us by the find script. If you need other libraries, you
