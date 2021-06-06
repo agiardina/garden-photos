@@ -69,6 +69,7 @@ set(SRCS
     src/init.h
     src/init.cpp
     src/result.h
+    src/events.h
 )
 
 SET(CPACK_BUNDLE_NAME "GardenPhotos")
