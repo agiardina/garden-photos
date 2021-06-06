@@ -10,8 +10,6 @@
 
 #include <wx/menu.h>
 
-#define IMPORT_FOLDER (wxID_HIGHEST + 1)
-
 class menu: public wxMenuBar
 {
 private:

@@ -6,10 +6,11 @@
 //
 
 #include "menu.h"
+#include "events.h"
 
 void menu::init()
 {
     file = new wxMenu();
-    file->Append(IMPORT_FOLDER, wxT("&Import folder"));
+    file->Append(GP_EVT_IMPORT_FOLDER, wxT("&Import folder"));
     Append(file, wxT("&File"));
 }
