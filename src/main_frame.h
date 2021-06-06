@@ -17,8 +17,6 @@
 #include "image_panel.h"
 #include "sidebar.h"
 
-#define GP_TOGGLE_FAVORITE (wxID_HIGHEST + 1)
-
 class main_frame: public wxFrame
 {
 private:

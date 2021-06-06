@@ -17,6 +17,7 @@
 #include "menu.h"
 #include "config.h"
 #include "photos.h"
+#include "events.h"
 
 void main_frame::init(config &cfg, Poco::Data::Session &session)
 {
@@ -55,20 +56,24 @@ void main_frame::populate_menu()
 void main_frame::populate_toolbar()
 {
     wxToolBar* toolbar = CreateToolBar();
-    toolbar->AddTool(GP_TOGGLE_FAVORITE,"Toggle Favorite",utils::toolbar_icon("favorite",GetContentScaleFactor()));
+    toolbar->AddTool(GP_EVT_TOGGLE_FAVORITE,"Toggle Favorite",utils::toolbar_icon("favorite",GetContentScaleFactor()));
     toolbar->Realize();
 }
 
 void main_frame::bind_events()
 {
-    Bind(wxEVT_COMMAND_MENU_SELECTED, &main_frame::on_import, this, IMPORT_FOLDER);
-    Bind(wxEVT_COMMAND_MENU_SELECTED, &main_frame::on_favorite_toggle, this, GP_TOGGLE_FAVORITE);
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &main_frame::on_import, this, GP_EVT_IMPORT_FOLDER);
+    Bind(wxEVT_COMMAND_MENU_SELECTED, &main_frame::on_favorite_toggle, this, GP_EVT_TOGGLE_FAVORITE);
     Bind(GP_SIDEBAR_CLICK, &main_frame::on_sidebar_click,this);
     Bind(GP_PHOTO_CHANGED, &main_frame::on_photo_changed,this);
 }
 
 void main_frame::on_favorite_toggle( wxEvent& event)
 {
+    std::cout << event.GetId() << "\n";
+    std::cout << GP_EVT_IMPORT_FOLDER << "\n";
+    std::cout << GP_EVT_TOGGLE_FAVORITE << "\n";
+    
     int photo_id = m_main_panel->displayed_photo();
     if (photo_id > 0) { //No current photo displayed
         photos::photo curr_photo = photos::toggle_favorite(photo_id, *m_session);
@@ -85,7 +90,7 @@ void main_frame::on_import( wxEvent& WXUNUSED(event) )
     {
     
         photos::gallery gallery = photos::gallery_by_path(m_cfg->base_path(),*m_session);
-        std::vector<std::string> photos_to_import = photos::photos_on_folder(m_cfg->base_path());
+        std::vector<std::string> photos_to_import = photos::photos_on_folder(utils::wx2str(dir_dlg.GetPath()));
         int n_photos = photos_to_import.size();
         wxProgressDialog dialog("Import","Importing photos",n_photos);
         for ( int i = 0; i < n_photos; ++i ) {
@@ -120,8 +125,8 @@ void main_frame::on_photo_changed(wxCommandEvent &event)
 void main_frame::show_photo_as_favorite(bool is_favorite)
 {
     if (is_favorite) {
-        GetToolBar()->SetToolNormalBitmap(GP_TOGGLE_FAVORITE,utils::toolbar_icon("favoritewhite",GetContentScaleFactor()));
+        GetToolBar()->SetToolNormalBitmap(GP_EVT_TOGGLE_FAVORITE,utils::toolbar_icon("favoritewhite",GetContentScaleFactor()));
     } else {
-        GetToolBar()->SetToolNormalBitmap(GP_TOGGLE_FAVORITE,utils::toolbar_icon("favorite",GetContentScaleFactor()));
+        GetToolBar()->SetToolNormalBitmap(GP_EVT_TOGGLE_FAVORITE,utils::toolbar_icon("favorite",GetContentScaleFactor()));
     }
 }
